@@ -4,9 +4,9 @@ A collection of [Agent Skills](https://agentskills.io) that teach AI agents how 
 
 ## Available Skills
 
-| Skill | Path | Description |
-|---|---|---|
-| Tokenized Agent Payments | [`tokenized-agents/SKILL.md`](tokenized-agents/SKILL.md) | Accept payments and verify invoices on-chain for Pump Tokenized Agents using `@pump-fun/agent-payments-sdk`. |
+| Skill                    | Path                                                     | Description                                                                                                  |
+| ------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Tokenized Agent Payments | [`tokenized-agents/`](tokenized-agents/) | Accept payments and verify invoices on-chain for Pump Tokenized Agents using `@pump-fun/agent-payments-sdk`. |
 
 ## Repo Structure
 
@@ -14,13 +14,11 @@ A collection of [Agent Skills](https://agentskills.io) that teach AI agents how 
 pump-fun-skills/
 ├── README.md
 └── tokenized-agents/
-    ├── SKILL.md          # Agent Skill (accept payment + verify payment)
-    └── skills.md         # Full SDK reference
 ```
 
 ## Getting Started
 
-1. **Point your AI agent at a skill.** Load `tokenized-agents/SKILL.md` into your agent's context.
+1. **Point your AI agent at a skill.** Load the `tokenized-agents/` skill into your agent's context.
 
 2. **Install the required SDK.**
 
@@ -37,7 +35,7 @@ pump-fun-skills/
 To add a new skill:
 
 1. Create a directory for the skill domain (e.g. `token-trading/`).
-2. Add a `SKILL.md` file with YAML frontmatter (`name`, `description`) followed by Markdown instructions.
+2. Add instructions with YAML frontmatter (`name`, `description`) followed by Markdown instructions.
 3. Update this README to list the new skill in the table above.
 
 ## License
