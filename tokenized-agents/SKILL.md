@@ -365,10 +365,10 @@ Transactions may take a few seconds to confirm. Use a retry loop for reliability
 async function verifyPayment(params: {
   user: string;
   currencyMint: string;
-  amount: string;
-  memo: string;
-  startTime: string;
-  endTime: string;
+  amount: number;
+  memo: number;
+  startTime: number;
+  endTime: number;
 }): Promise<boolean> {
   const agentMint = new PublicKey(process.env.AGENT_TOKEN_MINT_ADDRESS!);
   const agent = new PumpAgent(agentMint);
@@ -376,10 +376,10 @@ async function verifyPayment(params: {
   const invoiceParams = {
     user: new PublicKey(params.user),
     currencyMint: new PublicKey(params.currencyMint),
-    amount: Number(params.amount),
-    memo: Number(params.memo),
-    startTime: Number(params.startTime),
-    endTime: Number(params.endTime),
+    amount: params.amount,
+    memo: params.memo,
+    startTime: params.startTime,
+    endTime: params.endTime,
   };
 
   for (let attempt = 0; attempt < 5; attempt++) {
