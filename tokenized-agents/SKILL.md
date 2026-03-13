@@ -32,10 +32,10 @@ Do not assume these values. If any are missing, ask the user before proceeding.
 
 ## Supported Currencies
 
-| Currency    | Decimals | Smallest unit example        |
-|-------------|----------|------------------------------|
-| USDC        | 6        | `1000000` = 1 USDC           |
-| Wrapped SOL | 9        | `1000000000` = 1 SOL         |
+| Currency    | Decimals | Smallest unit example |
+| ----------- | -------- | --------------------- |
+| USDC        | 6        | `1000000` = 1 USDC    |
+| Wrapped SOL | 9        | `1000000000` = 1 SOL  |
 
 ## Environment Variables
 
@@ -58,6 +58,7 @@ CURRENCY_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
 ```
 
 **RPC for mainnet-beta:** The default Solana public RPC (`https://api.mainnet-beta.solana.com`) does **not** support sending transactions. If the user has not provided their own RPC URL, use one of these free mainnet-beta endpoints that support `sendTransaction`:
+
 - **Solana Tracker** — `https://rpc.solanatracker.io/public`
 - **Ankr** — `https://rpc.ankr.com/solana`
 
@@ -74,6 +75,7 @@ npm install @pump-fun/agent-payments-sdk @solana/web3.js @coral-xyz/anchor
 `@pump-fun/agent-payments-sdk` depends on `@coral-xyz/anchor`, `@solana/web3.js`, and `@solana/spl-token`. When the app also installs these packages directly, mismatched versions can cause runtime errors (duplicate `BN` constructors, IDL decode failures, etc.).
 
 **Rules:**
+
 1. Before installing `@coral-xyz/anchor`, `@solana/web3.js`, `@solana/spl-token`, or any `@solana/wallet-adapter-*` package, first check what versions `@pump-fun/agent-payments-sdk` declares in its own `package.json` (inspect it via `npm info @pump-fun/agent-payments-sdk dependencies`). Install the same ranges — or ranges that resolve to the same major.minor — so npm/pnpm hoists a single copy instead of two.
 2. Never blindly install "latest" for these shared packages. Always prefer the version that is most compatible with the latest `@pump-fun/agent-payments-sdk`.
 3. If the project already has these packages at different versions, align them to match the SDK and re-install.
@@ -95,11 +97,11 @@ const agentMint = new PublicKey(process.env.AGENT_TOKEN_MINT_ADDRESS!);
 new PumpAgent(mint: PublicKey, environment?: "mainnet" | "devnet", connection?: Connection)
 ```
 
-| Parameter     | Type                       | Default      | Description                                      |
-|---------------|----------------------------|--------------|--------------------------------------------------|
-| `mint`        | `PublicKey`                | —            | The tokenized agent's token mint address         |
-| `environment` | `"mainnet"` \| `"devnet"` | `"mainnet"`  | Network environment                              |
-| `connection`  | `Connection` (optional)    | `undefined`  | Solana RPC connection (enables RPC fallback for verification) |
+| Parameter     | Type                      | Default     | Description                                                   |
+| ------------- | ------------------------- | ----------- | ------------------------------------------------------------- |
+| `mint`        | `PublicKey`               | —           | The tokenized agent's token mint address                      |
+| `environment` | `"mainnet"` \| `"devnet"` | `"mainnet"` | Network environment                                           |
+| `connection`  | `Connection` (optional)   | `undefined` | Solana RPC connection (enables RPC fallback for verification) |
 
 **Without connection** — enough for building instructions and HTTP-based payment verification:
 
@@ -118,7 +120,7 @@ const agent = new PumpAgent(agentMint, "mainnet", connection);
 
 ## Wallet Integration (Frontend)
 
-Install `@solana/wallet-adapter-react`, `@solana/wallet-adapter-react-ui`, and `@solana/wallet-adapter-wallets`. Use `useWallet()` for `publicKey` and `signTransaction`, and `useConnection()` for the active RPC connection. See [references/WALLET_INTEGRATION.md](references/WALLET_INTEGRATION.md) for the full WalletProvider setup, layout wrapping, and hook usage.
+Install `@solana/wallet-adapter-react`, `@solana/wallet-adapter-react-ui`, and `@solana/wallet-adapter-wallets`. Use `useWallet()` for `publicKey` and `signTransaction`, and `useConnection()` for the active RPC connection. See [references/WALLET_INTEGRATION.md](https://raw.githubusercontent.com/pump-fun/pump-fun-skills/refs/heads/main/tokenized-agents/references/SCENARIOS.md) for the full WalletProvider setup, layout wrapping, and hook usage.
 
 ## Building Payment Instructions
 
@@ -126,16 +128,16 @@ Use `buildAcceptPaymentInstructions` to get all the instructions needed for a pa
 
 ### Parameters (`BuildAcceptPaymentParams`)
 
-| Parameter          | Type                         | Description                                       |
-|--------------------|------------------------------|---------------------------------------------------|
-| `user`             | `PublicKey`                  | The payer's wallet address                        |
-| `currencyMint`     | `PublicKey`                  | Mint address of the payment currency (USDC, wSOL) |
-| `amount`           | `bigint \| number \| string` | Price in the currency's smallest unit             |
-| `memo`             | `bigint \| number \| string` | Unique invoice identifier (random number)         |
-| `startTime`        | `bigint \| number \| string` | Unix timestamp — when the invoice becomes valid   |
-| `endTime`          | `bigint \| number \| string` | Unix timestamp — when the invoice expires         |
-| `tokenProgram`     | `PublicKey` (optional)       | Token program for the currency (defaults to SPL Token) |
-| `computeUnitLimit` | `number` (optional)          | Compute unit budget (default `92_849`). Increase if transactions fail with compute exceeded. |
+| Parameter          | Type                         | Description                                                                                          |
+| ------------------ | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `user`             | `PublicKey`                  | The payer's wallet address                                                                           |
+| `currencyMint`     | `PublicKey`                  | Mint address of the payment currency (USDC, wSOL)                                                    |
+| `amount`           | `bigint \| number \| string` | Price in the currency's smallest unit                                                                |
+| `memo`             | `bigint \| number \| string` | Unique invoice identifier (random number)                                                            |
+| `startTime`        | `bigint \| number \| string` | Unix timestamp — when the invoice becomes valid                                                      |
+| `endTime`          | `bigint \| number \| string` | Unix timestamp — when the invoice expires                                                            |
+| `tokenProgram`     | `PublicKey` (optional)       | Token program for the currency (defaults to SPL Token)                                               |
+| `computeUnitLimit` | `number` (optional)          | Compute unit budget (default `92_849`). Increase if transactions fail with compute exceeded.         |
 | `computeUnitPrice` | `number` (optional)          | Priority fee in microlamports per CU. If provided, a `SetComputeUnitPrice` instruction is prepended. |
 
 ### Example
@@ -144,10 +146,10 @@ Use `buildAcceptPaymentInstructions` to get all the instructions needed for a pa
 const ixs = await agent.buildAcceptPaymentInstructions({
   user: userPublicKey,
   currencyMint,
-  amount: "1000000",       // 1 USDC
-  memo: "123456789",       // unique invoice identifier
+  amount: "1000000", // 1 USDC
+  memo: "123456789", // unique invoice identifier
   startTime: "1700000000", // valid from
-  endTime: "1700086400",   // expires at
+  endTime: "1700086400", // expires at
 });
 ```
 
@@ -199,7 +201,12 @@ function generateInvoiceParams() {
 Build the payment instructions, assemble them into a full `Transaction` with a recent blockhash and fee payer, then serialize the unsigned transaction as a base64 string for the client.
 
 ```typescript
-import { Connection, PublicKey, Transaction, ComputeBudgetProgram } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  Transaction,
+  ComputeBudgetProgram,
+} from "@solana/web3.js";
 import { PumpAgent } from "@pump-fun/agent-payments-sdk";
 
 async function buildPaymentTransaction(params: {
@@ -232,7 +239,7 @@ async function buildPaymentTransaction(params: {
   tx.feePayer = userPublicKey;
   tx.add(
     ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
-    ...instructions
+    ...instructions,
   );
 
   const serializedTx = tx
@@ -257,7 +264,7 @@ import { Connection, Transaction } from "@solana/web3.js";
 async function signAndSendPayment(
   txBase64: string,
   signTransaction: (tx: Transaction) => Promise<Transaction>,
-  connection: Connection
+  connection: Connection,
 ): Promise<string> {
   if (!signTransaction) {
     throw new Error("Wallet does not support signing");
@@ -274,7 +281,7 @@ async function signAndSendPayment(
   const latestBlockhash = await connection.getLatestBlockhash("confirmed");
   await connection.confirmTransaction(
     { signature, ...latestBlockhash },
-    "confirmed"
+    "confirmed",
   );
 
   return signature;
@@ -316,14 +323,14 @@ Use `validateInvoicePayment` to confirm that a specific invoice was paid on-chai
 
 All numeric parameters must be `BN` (from `@coral-xyz/anchor`).
 
-| Parameter      | Type        | Description                          |
-|----------------|-------------|--------------------------------------|
-| `user`         | `PublicKey`  | The wallet that paid                 |
-| `currencyMint` | `PublicKey`  | Currency used for payment            |
-| `amount`       | `BN`         | Amount paid (smallest unit)          |
-| `memo`         | `BN`         | The invoice memo                     |
-| `startTime`    | `BN`         | Invoice start time (Unix timestamp)  |
-| `endTime`      | `BN`         | Invoice end time (Unix timestamp)    |
+| Parameter      | Type        | Description                         |
+| -------------- | ----------- | ----------------------------------- |
+| `user`         | `PublicKey` | The wallet that paid                |
+| `currencyMint` | `PublicKey` | Currency used for payment           |
+| `amount`       | `BN`        | Amount paid (smallest unit)         |
+| `memo`         | `BN`        | The invoice memo                    |
+| `startTime`    | `BN`        | Invoice start time (Unix timestamp) |
+| `endTime`      | `BN`        | Invoice end time (Unix timestamp)   |
 
 ### Simple Backend Verification
 
@@ -381,7 +388,7 @@ async function verifyPayment(params: {
   for (let attempt = 0; attempt < 5; attempt++) {
     const verified = await agent.validateInvoicePayment(invoiceParams);
     if (verified) return true;
-    await new Promise((r) => setTimeout(r, 3000));
+    await new Promise((r) => setTimeout(r, 2000));
   }
 
   return false;
@@ -425,4 +432,4 @@ const endTime = new BN("1700086400");
 
 ## Scenario Tests & Troubleshooting
 
-See [references/SCENARIOS.md](references/SCENARIOS.md) for detailed test scenarios (happy path, duplicate rejection, expired invoices, etc.) and a troubleshooting table for common errors.
+See [references/SCENARIOS.md](https://raw.githubusercontent.com/pump-fun/pump-fun-skills/refs/heads/main/tokenized-agents/references/SCENARIOS.md) for detailed test scenarios (happy path, duplicate rejection, expired invoices, etc.) and a troubleshooting table for common errors and for wallet Integration follow [references/WALLET_INTEGRATION.md](https://raw.githubusercontent.com/pump-fun/pump-fun-skills/refs/heads/main/tokenized-agents/references/SCENARIOS.md).
