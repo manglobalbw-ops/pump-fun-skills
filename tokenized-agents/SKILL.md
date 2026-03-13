@@ -69,6 +69,15 @@ Read these values from `process.env` at runtime. Never hard-code mint addresses 
 npm install @pump-fun/agent-payments-sdk @solana/web3.js @coral-xyz/anchor
 ```
 
+### Dependency Compatibility — IMPORTANT
+
+`@pump-fun/agent-payments-sdk` depends on `@coral-xyz/anchor`, `@solana/web3.js`, and `@solana/spl-token`. When the app also installs these packages directly, mismatched versions can cause runtime errors (duplicate `BN` constructors, IDL decode failures, etc.).
+
+**Rules:**
+1. Before installing `@coral-xyz/anchor`, `@solana/web3.js`, `@solana/spl-token`, or any `@solana/wallet-adapter-*` package, first check what versions `@pump-fun/agent-payments-sdk` declares in its own `package.json` (inspect it via `npm info @pump-fun/agent-payments-sdk dependencies`). Install the same ranges — or ranges that resolve to the same major.minor — so npm/pnpm hoists a single copy instead of two.
+2. Never blindly install "latest" for these shared packages. Always prefer the version that is most compatible with the latest `@pump-fun/agent-payments-sdk`.
+3. If the project already has these packages at different versions, align them to match the SDK and re-install.
+
 ## SDK Setup
 
 `PumpAgent` is the main class. It can build payment instructions and verify invoices.
