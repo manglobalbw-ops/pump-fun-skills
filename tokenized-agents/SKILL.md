@@ -1,26 +1,23 @@
 ---
 name: tokenized-agents
-description: Build payment flows for Pump Tokenized Agents using @pump-fun/agent-payments-sdk. Use when accepting payments, building accept-payment transactions, integrating Solana wallets, or verifying that a user has paid an invoice on-chain.
+description: >
+  Use when the user wants to charge users for actions. Use @pump-fun/agent-payments-sdk, to build Solana payment transactions, verify on-chain invoice payments, or integrate Solana wallet adapters for agent payment flows.
 metadata:
   author: pump-fun
-  version: "1.0"
+  version: "1.1"
 ---
 
-# Pump Tokenized Agent Payments
+## Before Starting Work
 
-Pump Tokenized Agents are AI agents whose revenue is linked to a token on pump.fun. The `@pump-fun/agent-payments-sdk` lets you build payment transactions and verify invoices on Solana.
+Before writing or modifying any code, confirm you have ALL of the following:
 
-## Before You Start — Gather Required Information
+- [ ] Agent token mint address (from pump.fun)
+- [ ] Payment currency decided (USDC or SOL)
+- [ ] Price/amount confirmed (in smallest unit)
+- [ ] RPC URL provided or a fallback agreed upon
+- [ ] Framework confirmed (Next.js, Express, other)
 
-Before writing any code, ask the user for the following if not already provided:
-
-1. **Agent token mint address** — the token mint created when the agent coin was launched on pump.fun.
-2. **Payment currency** — USDC or SOL (determines the `currencyMint`).
-3. **Price / amount** — how much to charge per request, in the currency's smallest unit.
-4. **Service to deliver** — what the agent should do after payment is confirmed (generate content, access an API, etc.).
-5. **Solana RPC** — which solana rpc to use, we have some defaults if they don't provide.
-
-Do not assume these values. If any are missing, ask the user before proceeding.
+If any item is unchecked, ask the user before proceeding.
 
 ## Safety Rules
 
@@ -267,11 +264,11 @@ This is the complete flow for building a transaction on the server, signing it o
 
 ```typescript
 function generateInvoiceParams() {
-  const memo = String(Math.floor(Math.random() * 900000000000) + 100000);
+  const memo = Math.floor(Math.random() * 900000000000) + 100000;
   const now = Math.floor(Date.now() / 1000);
-  const startTime = String(now);
-  const endTime = String(now + 86400); // valid for 24 hours
-  const amount = process.env.PRICE_AMOUNT || "1000000"; // e.g. 1 USDC
+  const startTime = now;
+  const endTime = now + 86400; // valid for 24 hours
+  const amount = Number(process.env.PRICE_AMOUNT) || 1000000; // e.g. 1 USDC
 
   return { amount, memo, startTime, endTime };
 }
@@ -282,12 +279,7 @@ function generateInvoiceParams() {
 Build the payment instructions, assemble them into a full `Transaction` with a recent blockhash and fee payer, then serialize the unsigned transaction as a base64 string for the client.
 
 ```typescript
-import {
-  Connection,
-  PublicKey,
-  Transaction,
-  ComputeBudgetProgram,
-} from "@solana/web3.js";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { PumpAgent } from "@pump-fun/agent-payments-sdk";
 
 async function buildPaymentTransaction(params: {
@@ -318,10 +310,7 @@ async function buildPaymentTransaction(params: {
   const tx = new Transaction();
   tx.recentBlockhash = blockhash;
   tx.feePayer = userPublicKey;
-  tx.add(
-    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
-    ...instructions,
-  );
+  tx.add(...instructions);
 
   const serializedTx = tx
     .serialize({ requireAllSignatures: false })
@@ -420,6 +409,10 @@ Use `validateInvoicePayment` to confirm that a specific invoice was paid on-chai
 | `memo`         | `number`    | The invoice memo                    |
 | `startTime`    | `number`    | Invoice start time (Unix timestamp) |
 | `endTime`      | `number`    | Invoice end time (Unix timestamp)   |
+
+> **Type note:** `validateInvoicePayment` expects `amount`, `memo`, `startTime`,
+> and `endTime` as `number`, not strings. If you stored them as strings,
+> parse them first: `Number(memo)`.
 
 ### Simple Backend Verification
 
