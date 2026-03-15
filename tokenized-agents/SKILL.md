@@ -9,7 +9,7 @@ metadata:
 
 ## Before Starting Work
 
-Before writing or modifying any code, confirm you have ALL of the following:
+Before writing or modifying any code, must ask the user for anything that is unclear:
 
 - [ ] Agent token mint address (from pump.fun)
 - [ ] Payment currency decided (USDC or SOL)
