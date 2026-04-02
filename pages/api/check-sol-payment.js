@@ -1,46 +1,85 @@
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
-// Define the wallet address for payment validation
-const VALID_WALLET_ADDRESS = 'CF4mr4WgZHHVt1tN3qQgYvqm5DonVDcy8LFn1atGYq9t';
+// Receiver (your) wallet address
+const RECEIVER_WALLET = new PublicKey('CF4mr4WgZHHVt1tN3qQgYvqm5DonVDcy8LFn1atGYq9t');
 
-// Create a connection to the Solana blockchain
-const connection = new Connection('https://api.mainnet-beta.solana.com');
+// Mainnet connection (use a dedicated RPC for reliability/throughput)
+const RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+const connection = new Connection(RPC_URL, 'confirmed');
 
+/**
+ * POST /api/check-sol-payment
+ * Body: { transactionSignature: string, minSol?: number }
+ *
+ * Validates that a confirmed transaction sent >= minSol SOL to RECEIVER_WALLET.
+ */
 export default async function handler(req, res) {
-    if (req.method === 'POST') {
-        const { transactionSignature } = req.body;
+  if (req.method !== 'POST') {
+    return res.status(405).json({ ok: false, error: 'Method not allowed. Use POST.' });
+  }
 
-        try {
-            // Get the transaction details using the signature
-            const transaction = await connection.getParsedConfirmedTransaction(transactionSignature);
+  const { transactionSignature, minSol } = req.body || {};
+  const minLamports = Math.floor((Number(minSol || 0) || 0) * LAMPORTS_PER_SOL);
 
-            // Validate the transaction
-            const isValid = validateTransaction(transaction);
+  if (!transactionSignature || typeof transactionSignature !== 'string') {
+    return res.status(400).json({ ok: false, error: 'Missing transactionSignature' });
+  }
 
-            if (isValid) {
-                return res.status(200).json({ message: 'Payment validated successfully.' });
-            } else {
-                return res.status(400).json({ message: 'Invalid payment. Transaction does not match the required wallet.' });
-            }
-        } catch (error) {
-            return res.status(500).json({ message: 'An error occurred while validating the transaction.', error: error.message });
-        }
-    } else {
-        return res.status(405).json({ message: 'Method not allowed. Please send a POST request.' });
-    }
-}
+  try {
+    const tx = await connection.getParsedTransaction(transactionSignature, {
+      maxSupportedTransactionVersion: 0,
+      commitment: 'confirmed',
+    });
 
-function validateTransaction(transaction) {
-    if (!transaction || transaction.meta.err) {
-        return false; // Transaction failed or does not exist
+    if (!tx) {
+      return res.status(404).json({ ok: false, error: 'Transaction not found (not confirmed yet)' });
     }
 
-    const transactionAccounts = transaction.transaction.message.accountKeys;
+    if (tx.meta?.err) {
+      return res.status(400).json({ ok: false, error: 'Transaction failed', metaErr: tx.meta.err });
+    }
 
-    const walletPublicKey = new PublicKey(VALID_WALLET_ADDRESS);
+    // Sum lamports transferred to receiver across all system transfers in this tx.
+    let receivedLamports = 0;
 
-    // Check if the wallet address matches the expected address
-    const matchedAccount = transactionAccounts.includes(walletPublicKey.toBase58());
+    const instructions = tx.transaction.message.instructions || [];
+    for (const ix of instructions) {
+      // Parsed system transfer
+      if (
+        ix?.program === 'system' &&
+        ix?.parsed?.type === 'transfer' &&
+        ix?.parsed?.info?.destination === RECEIVER_WALLET.toBase58()
+      ) {
+        receivedLamports += Number(ix.parsed.info.lamports || 0);
+      }
+    }
 
-    return matchedAccount;
+    if (minLamports > 0 && receivedLamports < minLamports) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Insufficient payment',
+        receivedLamports,
+        requiredLamports: minLamports,
+      });
+    }
+
+    if (receivedLamports <= 0) {
+      return res.status(400).json({
+        ok: false,
+        error: 'No SOL transfer to receiver wallet found in transaction',
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      receiver: RECEIVER_WALLET.toBase58(),
+      signature: transactionSignature,
+      receivedLamports,
+      receivedSol: receivedLamports / LAMPORTS_PER_SOL,
+      slot: tx.slot,
+      blockTime: tx.blockTime,
+    });
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: 'Validation error', details: error?.message || String(error) });
+  }
 }
