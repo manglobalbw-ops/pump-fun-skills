@@ -1,14 +1,24 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import styles from '../styles/Home.module.css';
 import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
+import {
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
+  createTransferCheckedInstruction,
+} from '@solana/spl-token';
+
 const RECEIVER = new PublicKey('CF4mr4WgZHHVt1tN3qQgYvqm5DonVDcy8LFn1atGYq9t');
 
-// NOTE: Pricing is configurable here until you confirm exact amounts.
-const DEFAULT_SOL_PRICE = 0.1; // SOL
-const DEFAULT_USDC_PRICE = 1; // USDC
+// Prices you confirmed:
+const SOL_PRICE = 0.01; // SOL
+const USDC_PRICE = 1; // USDC
+const USDC_DECIMALS = 6;
+
+// Mainnet USDC mint:
+const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
 
 export default function Home() {
   const { connection } = useConnection();
@@ -23,7 +33,7 @@ export default function Home() {
       setStatus('Building SOL transaction...');
       if (!publicKey) throw new Error('Connect Phantom first');
 
-      const lamports = Math.floor(DEFAULT_SOL_PRICE * LAMPORTS_PER_SOL);
+      const lamports = Math.floor(SOL_PRICE * LAMPORTS_PER_SOL);
       if (lamports <= 0) throw new Error('Invalid SOL amount');
 
       const tx = new Transaction().add(
@@ -46,7 +56,7 @@ export default function Home() {
       const resp = await fetch('/api/check-sol-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactionSignature: sig, minSol: DEFAULT_SOL_PRICE }),
+        body: JSON.stringify({ transactionSignature: sig, minSol: SOL_PRICE }),
       });
       const json = await resp.json();
       if (!resp.ok || !json.ok) throw new Error(json.error || 'SOL verification failed');
@@ -55,14 +65,70 @@ export default function Home() {
       setRandomNumber(n);
       setStatus('✅ SOL payment verified. Action unlocked.');
     } catch (e) {
-      setStatus(`❌ ${e.message || String(e)}`);
+      setStatus(`❌ ${e?.message || String(e)}`);
     }
   };
 
   const payUsdc = async () => {
-    // USDC client transfer requires SPL token instructions.
-    // We'll add it once you confirm prices and whether the receiver uses an ATA.
-    setStatus('USDC payment UI pending: confirm USDC price + receiver token account/ATA preference.');
+    try {
+      setStatus('Building USDC transfer...');
+      if (!publicKey) throw new Error('Connect Phantom first');
+
+      // Derive ATAs
+      const senderAta = await getAssociatedTokenAddress(USDC_MINT, publicKey);
+      const receiverAta = await getAssociatedTokenAddress(USDC_MINT, RECEIVER);
+
+      const tx = new Transaction();
+
+      // Ensure receiver ATA exists (create if missing)
+      const receiverAtaInfo = await connection.getAccountInfo(receiverAta);
+      if (!receiverAtaInfo) {
+        tx.add(
+          createAssociatedTokenAccountInstruction(
+            publicKey,     // payer
+            receiverAta,   // ata to create
+            RECEIVER,      // token account owner
+            USDC_MINT
+          )
+        );
+      }
+
+      const amountBaseUnits = USDC_PRICE * 10 ** USDC_DECIMALS;
+
+      tx.add(
+        createTransferCheckedInstruction(
+          senderAta,
+          USDC_MINT,
+          receiverAta,
+          publicKey,
+          amountBaseUnits,
+          USDC_DECIMALS
+        )
+      );
+
+      setStatus('Sending USDC transaction (Phantom will prompt)...');
+      const sig = await sendTransaction(tx, connection);
+      setLastSig(sig);
+
+      setStatus('Confirming transaction...');
+      const latest = await connection.getLatestBlockhash();
+      await connection.confirmTransaction({ signature: sig, ...latest }, 'confirmed');
+
+      setStatus('Verifying on server...');
+      const resp = await fetch('/api/check-usdc-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionSignature: sig, minUsdc: USDC_PRICE }),
+      });
+      const json = await resp.json();
+      if (!resp.ok || !json.ok) throw new Error(json.error || 'USDC verification failed');
+
+      const n = Math.floor(Math.random() * 1000);
+      setRandomNumber(n);
+      setStatus('✅ USDC payment verified. Action unlocked.');
+    } catch (e) {
+      setStatus(`❌ ${e?.message || String(e)}`);
+    }
   };
 
   return (
@@ -77,10 +143,10 @@ export default function Home() {
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
           <button className={styles.button} onClick={paySol} disabled={!publicKey}>
-            Pay {DEFAULT_SOL_PRICE} SOL
+            Pay {SOL_PRICE} SOL
           </button>
           <button className={styles.button} onClick={payUsdc} disabled={!publicKey}>
-            Pay {DEFAULT_USDC_PRICE} USDC
+            Pay {USDC_PRICE} USDC
           </button>
         </div>
 
