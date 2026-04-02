@@ -1,1 +1,1 @@
-{"dependencies": {"@pump-fun/agent-payments-sdk": "^1.0.0", "@solana/web3.js": "^1.0.0", "@solana/wallet-adapter-react": "^1.0.0", "@solana/wallet-adapter-react-ui": "^1.0.0", "@solana/wallet-adapter-wallets": "^1.0.0", "axios": "^1.0.0"}}
+{"name":"pump-fun-skills","version":"1.0.0","private":true,"dependencies":{"next":"latest","@solana/spl-token":"^latest","@solana/wallet-adapter-base":"^latest","@solana/wallet-adapter-wallets":"^latest","styled-components":"^latest"},"scripts":{"dev":"next dev","build":"next build","start":"next start"}}
