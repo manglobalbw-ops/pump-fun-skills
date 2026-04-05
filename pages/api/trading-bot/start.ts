@@ -8,6 +8,9 @@ import {
 } from '../../../lib/pumpfunApi';
 
 const SCAN_INTERVAL_MS = 15_000; // scan every 15 seconds
+const SECONDS_PER_HOUR = 3_600;
+const MAX_TOKEN_AGE_SECONDS = 6 * SECONDS_PER_HOUR;
+const MAX_IDLE_TRADE_SECONDS = 600; // 10 minutes without a trade
 
 function generateId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -40,10 +43,10 @@ function evaluateBuySignal(coin: PricedCoin): TradeSignal | null {
   // Skip tokens older than 6 hours — prefer fresh launches
   const now = Math.floor(Date.now() / 1000);
   const ageSeconds = now - Math.floor(coin.created_timestamp / 1000);
-  if (ageSeconds > 6 * 3600) return null;
+  if (ageSeconds > MAX_TOKEN_AGE_SECONDS) return null;
 
   // Require at least some trading activity in the last 10 minutes
-  if (now - coin.last_trade_unix_time > 600) return null;
+  if (now - coin.last_trade_unix_time > MAX_IDLE_TRADE_SECONDS) return null;
 
   const reasonParts: string[] = [
     `MCap ${coin.marketCapSol.toFixed(1)} SOL`,

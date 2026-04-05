@@ -159,15 +159,27 @@ export default function TokensPage() {
               <div className={styles.cardHeader}>
                 <div className={styles.tokenIcon}>
                   {coin.image_uri ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={coin.image_uri}
                       alt={coin.symbol}
                       className={styles.tokenImg}
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        img.setAttribute('aria-hidden', 'true');
+                        img.style.display = 'none';
+                        const fallback = img.nextElementSibling as HTMLElement | null;
+                        if (fallback) fallback.style.display = 'flex';
+                      }}
                     />
-                  ) : (
-                    <div className={styles.tokenImgFallback}>{coin.symbol.slice(0, 2)}</div>
-                  )}
+                  ) : null}
+                  <div
+                    className={styles.tokenImgFallback}
+                    aria-label={coin.symbol}
+                    style={{ display: coin.image_uri ? 'none' : 'flex' }}
+                  >
+                    {coin.symbol.slice(0, 2)}
+                  </div>
                 </div>
                 <div className={styles.tokenMeta}>
                   <div className={styles.tokenSymbol}>{coin.symbol}</div>
