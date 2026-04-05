@@ -121,7 +121,7 @@ export default function Home() {
         <h1 className={styles.title}>Pump.fun Payments (Phantom)</h1>
         <p className={styles.description}>Receiver: {RECEIVER.toBase58()}</p>
 
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 24, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <a
             href="/trading-bot"
             style={{
@@ -136,6 +136,21 @@ export default function Home() {
             }}
           >
             🤖 Open Trading Bot →
+          </a>
+          <a
+            href="/tokens"
+            style={{
+              display: 'inline-block',
+              background: 'linear-gradient(135deg, #1a2e1a, #2d4830)',
+              color: '#9ae6b4',
+              padding: '12px 24px',
+              borderRadius: 8,
+              textDecoration: 'none',
+              fontWeight: 600,
+              fontSize: 15,
+            }}
+          >
+            🔍 Token Discovery →
           </a>
         </div>
 

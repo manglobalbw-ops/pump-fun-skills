@@ -37,7 +37,24 @@ function evaluateBuySignal(coin: PricedCoin): TradeSignal | null {
   const openCount = state.positions.filter((p) => p.status === 'open').length;
   if (openCount >= config.maxPositions) return null;
 
+  // Skip tokens older than 6 hours — prefer fresh launches
   const now = Math.floor(Date.now() / 1000);
+  const ageSeconds = now - Math.floor(coin.created_timestamp / 1000);
+  if (ageSeconds > 6 * 3600) return null;
+
+  // Require at least some trading activity in the last 10 minutes
+  if (now - coin.last_trade_unix_time > 600) return null;
+
+  const reasonParts: string[] = [
+    `MCap ${coin.marketCapSol.toFixed(1)} SOL`,
+    `liq ${coin.liquiditySol.toFixed(2)} SOL`,
+  ];
+  if (ageSeconds < 3600) {
+    reasonParts.push(`age ${Math.floor(ageSeconds / 60)}m`);
+  }
+  if (coin.reply_count > 0) {
+    reasonParts.push(`${coin.reply_count} replies`);
+  }
 
   return {
     id: generateId(),
@@ -48,7 +65,7 @@ function evaluateBuySignal(coin: PricedCoin): TradeSignal | null {
     priceSol: coin.priceSol,
     marketCapSol: coin.marketCapSol,
     liquiditySol: coin.liquiditySol,
-    reason: `Market cap ${coin.marketCapSol.toFixed(1)} SOL within target range, liquidity ${coin.liquiditySol.toFixed(2)} SOL`,
+    reason: reasonParts.join(' · '),
     createdAt: now,
     expiresAt: now + 120, // signal valid for 2 minutes
   };

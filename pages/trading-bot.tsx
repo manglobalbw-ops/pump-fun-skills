@@ -137,7 +137,7 @@ function timeLeft(expiresAt: number): string {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export default function TradingBot() {
-  const { publicKey, signTransaction, connected } = useWallet();
+  const { publicKey, signTransaction, sendTransaction: walletSendTransaction, connected } = useWallet();
   const { connection } = useConnection();
 
   const [status, setStatus] = useState<BotStatus | null>(null);
@@ -287,23 +287,26 @@ export default function TradingBot() {
       const lamports = Math.round(config.buyAmountSol * LAMPORTS_PER_SOL);
       const inputMint = signal.type === 'buy' ? SOL_MINT : signal.tokenMint;
       const outputMint = signal.type === 'buy' ? signal.tokenMint : SOL_MINT;
-      const swapAmount =
-        signal.type === 'buy'
-          ? lamports
-          : Math.round(signal.priceSol * signal.priceSol * 1e9); // approximate; real apps derive exact token amount
+
+      // For sells, derive the token amount from the recorded position (6 decimals for pump.fun tokens)
+      let swapAmount = lamports;
+      if (signal.type === 'sell' && signal.positionId) {
+        const pos = status?.positions.find((p) => p.id === signal.positionId);
+        swapAmount = pos ? Math.round(pos.tokenAmount * 1e6) : Math.round(lamports / signal.priceSol);
+      }
 
       notify('info', 'Building swap transaction via Jupiter…');
       const swapTxBase64 = await buildSwapTransaction(
         inputMint,
         outputMint,
-        signal.type === 'buy' ? lamports : swapAmount,
+        swapAmount,
         publicKey,
       );
 
       let signature: string;
 
       if (swapTxBase64) {
-        // Deserialize and sign the versioned transaction from Jupiter
+        // Deserialize the swap transaction returned by Jupiter
         const swapTxBytes = new Uint8Array(Buffer.from(swapTxBase64, 'base64'));
         let tx: Transaction | VersionedTransaction;
         try {
@@ -314,22 +317,11 @@ export default function TradingBot() {
 
         notify('info', 'Please approve the transaction in your wallet…');
 
-        if (tx instanceof VersionedTransaction) {
-          // For VersionedTransaction, use sendTransaction from the wallet
-          // We build a legacy Transaction wrapper to use signTransaction
-          const legacyTx = Transaction.from(swapTxBytes);
-          const signedTx = await signTransaction(legacyTx);
-          signature = await connection.sendRawTransaction(signedTx.serialize(), {
-            skipPreflight: false,
-            preflightCommitment: 'confirmed',
-          });
-        } else {
-          const signedTx = await signTransaction(tx as Transaction);
-          signature = await connection.sendRawTransaction(signedTx.serialize(), {
-            skipPreflight: false,
-            preflightCommitment: 'confirmed',
-          });
-        }
+        // walletSendTransaction handles both VersionedTransaction and legacy Transaction
+        signature = await walletSendTransaction(tx, connection, {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed',
+        });
 
         notify('info', 'Confirming transaction…');
         const latestBlockhash = await connection.getLatestBlockhash('confirmed');
