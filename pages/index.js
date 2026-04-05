@@ -137,6 +137,24 @@ export default function Home() {
         <h1 className={styles.title}>Pump.fun Payments (Phantom)</h1>
         <p className={styles.description}>Receiver: {RECEIVER.toBase58()}</p>
 
+        <div style={{ marginBottom: 24 }}>
+          <a
+            href="/trading-bot"
+            style={{
+              display: 'inline-block',
+              background: 'linear-gradient(135deg, #1a1d2e, #2d3748)',
+              color: '#e2e8f0',
+              padding: '12px 24px',
+              borderRadius: 8,
+              textDecoration: 'none',
+              fontWeight: 600,
+              fontSize: 15,
+            }}
+          >
+            🤖 Open Trading Bot →
+          </a>
+        </div>
+
         <div style={{ marginBottom: 16 }}>
           <WalletMultiButton />
         </div>

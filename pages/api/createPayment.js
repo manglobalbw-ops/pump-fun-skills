@@ -1,21 +1,17 @@
 // pages/api/createPayment.js
 
-import { NextResponse } from 'next/server';
+export default async function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ ok: false, error: 'Method not allowed. Use POST.' });
+    }
 
-export async function POST(req) {
-    const { amount, currency, paymentMethodId } = await req.json();
+    const { amount, currency, paymentMethodId } = req.body || {};
 
     try {
-        // Replace with your actual payment processing logic
-        const paymentResult = await processPayment({
-            amount,
-            currency,
-            paymentMethodId
-        });
-
-        return NextResponse.json(paymentResult, { status: 200 });
+        const paymentResult = await processPayment({ amount, currency, paymentMethodId });
+        return res.status(200).json(paymentResult);
     } catch (error) {
-        return NextResponse.json({ message: 'Payment processing failed', error: error.message }, { status: 500 });
+        return res.status(500).json({ message: 'Payment processing failed', error: error.message });
     }
 }
 
